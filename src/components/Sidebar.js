@@ -1,6 +1,9 @@
 import React from 'react';
+import { useScratch } from '../context/ScratchContext';
 
 export default function Sidebar() {
+  const { addBlockToActive } = useScratch();
+
   const categories = [
     {
       name: 'Motion',
@@ -43,6 +46,7 @@ export default function Sidebar() {
                 key={block.type}
                 draggable
                 onDragStart={(e) => handleDragStart(e, block.type)}
+                onClick={() => addBlockToActive(block.type)}
                 className={`w-full text-left text-white px-3 py-2 rounded-md font-medium text-sm shadow-sm cursor-grab active:cursor-grabbing ${cat.color} hover:opacity-90 transition`}
               >
                 {block.label}
