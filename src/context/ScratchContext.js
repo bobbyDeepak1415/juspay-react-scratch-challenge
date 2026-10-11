@@ -8,22 +8,21 @@ export const ScratchProvider = ({ children }) => {
     sprite1: {
       id: 'sprite1',
       name: 'Sprite 1',
-      x: 50,
-      y: 100,
+      x: 100,
+      y: 200,
       rotation: 0,
       blocks: [],
-      speech: null, // { text, type: 'say' | 'think' }
-      velocity: { dx: 2, dy: 0 }, // Used for movement & collision swap
+      speech: null, 
+      velocity: { dx: 2, dy: 0 }, // Positive velocity moves right
     },
     sprite2: {
       id: 'sprite2',
       name: 'Sprite 2',
-      x: 300,
-      y: 100,
+      y: 200,
       rotation: 0,
       blocks: [],
       speech: null,
-      velocity: { dx: -2, dy: 0 },
+      velocity: { dx: -2, dy: 0 }, // Negative velocity moves left
     }
   });
 
@@ -31,6 +30,10 @@ export const ScratchProvider = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const playRef = useRef(isPlaying);
   playRef.current = isPlaying;
+  
+  // Keep a ref of sprites for the animation loop to avoid closure staleness
+  const spritesRef = useRef(sprites);
+  spritesRef.current = sprites;
 
   // Add new sprite
   const addSprite = () => {
@@ -100,11 +103,10 @@ export const ScratchProvider = ({ children }) => {
 
     let animationFrameId;
     const executeScripts = async () => {
-      // Run all sprites concurrently
-      const spriteIds = Object.keys(sprites);
+      const spriteIds = Object.keys(spritesRef.current);
       
       const promises = spriteIds.map(async (sId) => {
-        const sprite = sprites[sId];
+        const sprite = spritesRef.current[sId];
         for (let block of sprite.blocks) {
           if (!playRef.current) break;
           await runBlock(sId, block);
@@ -117,36 +119,59 @@ export const ScratchProvider = ({ children }) => {
 
     executeScripts();
 
-    // Collision Detection Loop (Hero Feature)
-    const checkCollisions = () => {
+    // Continuous Physics & Collision Detection Loop (Hero Feature)
+    const updatePhysics = () => {
       if (!playRef.current) return;
-      const currentSprites = Object.values(sprites);
-      
-      for (let i = 0; i < currentSprites.length; i++) {
-        for (let j = i + 1; j < currentSprites.length; j++) {
-          const s1 = currentSprites[i];
-          const s2 = currentSprites[j];
 
-          // Bounding box collision check (assuming sprite size ~ 50px)
-          const distance = Math.hypot(s1.x - s2.x, s1.y - s2.y);
-          if (distance < 45) {
-            // HERO FEATURE: Swap velocity / animation vectors on collision
-            setSprites(prev => {
-              if (!prev[s1.id] || !prev[s2.id]) return prev;
-              const tempVel = prev[s1.id].velocity;
-              return {
-                ...prev,
-                [s1.id]: { ...prev[s1.id], velocity: prev[s2.id].velocity },
-                [s2.id]: { ...prev[s2.id], velocity: tempVel }
+      setSprites(prev => {
+        let updated = { ...prev };
+        const keys = Object.keys(updated);
+
+        // 1. Move sprites continuously based on their velocity vector
+        keys.forEach(k => {
+          const s = updated[k];
+          if (s.velocity && (s.velocity.dx !== 0 || s.velocity.dy !== 0)) {
+            updated[k] = {
+              ...s,
+              x: s.x + s.velocity.dx,
+              y: s.y + s.velocity.dy
+            };
+          }
+        });
+
+        // 2. Check collisions between sprites
+        for (let i = 0; i < keys.length; i++) {
+          for (let j = i + 1; j < keys.length; j++) {
+            const s1 = updated[keys[i]];
+            const s2 = updated[keys[j]];
+
+            const distance = Math.hypot(s1.x - s2.x, s1.y - s2.y);
+            if (distance < 50) {
+              // HERO FEATURE: Swap velocity vectors on collision
+              const tempDx = s1.velocity.dx;
+              const tempDy = s1.velocity.dy;
+
+              updated[keys[i]] = {
+                ...s1,
+                velocity: { dx: s2.velocity.dx, dy: s2.velocity.dy },
+                x: s1.x + s2.velocity.dx // push slightly to avoid sticky collision loops
               };
-            });
+              updated[keys[j]] = {
+                ...s2,
+                velocity: { dx: tempDx, dy: tempDy },
+                x: s2.x + tempDx
+              };
+            }
           }
         }
-      }
-      animationFrameId = requestAnimationFrame(checkCollisions);
+
+        return updated;
+      });
+
+      animationFrameId = requestAnimationFrame(updatePhysics);
     };
 
-    animationFrameId = requestAnimationFrame(checkCollisions);
+    animationFrameId = requestAnimationFrame(updatePhysics);
 
     return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying]);
@@ -165,13 +190,12 @@ export const ScratchProvider = ({ children }) => {
 
           switch (block.type) {
             case 'MOVE': {
-  const steps = Number(block.params.steps) || 0;
-  
-    const direction = (velocity && velocity.dx < 0) ? -1 : 1;
-  
-  x += steps * direction;
-  break;
-}
+              const steps = Number(block.params.steps) || 0;
+              // Update velocity magnitude/direction based on Move steps
+              const dir = velocity.dx < 0 ? -1 : 1;
+              velocity = { ...velocity, dx: dir * Math.abs(steps / 5) };
+              break;
+            }
             case 'TURN': {
               const deg = Number(block.params.degrees) || 0;
               rotation = (rotation + deg) % 360;
@@ -193,11 +217,10 @@ export const ScratchProvider = ({ children }) => {
 
           return {
             ...prev,
-            [sId]: { ...sprite, x, y, rotation, speech }
+            [sId]: { ...sprite, x, y, rotation, velocity, speech }
           };
         });
 
-        // Handle speech bubble duration timeout
         if (block.type === 'SAY' || block.type === 'THINK') {
           const duration = (Number(block.params.duration) || 2) * 1000;
           setTimeout(() => {
@@ -209,7 +232,7 @@ export const ScratchProvider = ({ children }) => {
           }, duration);
           setTimeout(resolve, duration);
         } else {
-          setTimeout(resolve, 300); // Animation pacing step
+          setTimeout(resolve, 300);
         }
       }, 300);
     });
