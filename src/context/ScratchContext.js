@@ -165,14 +165,13 @@ export const ScratchProvider = ({ children }) => {
 
           switch (block.type) {
             case 'MOVE': {
-              const steps = Number(block.params.steps) || 0;
-              const rad = (rotation * Math.PI) / 180;
-              // Incorporate velocity swap vector if active
-              const dirMultiplier = velocity.dx >= 0 ? 1 : -1;
-              x += steps * Math.cos(rad) * dirMultiplier;
-              y += steps * Math.sin(rad) * dirMultiplier;
-              break;
-            }
+  const steps = Number(block.params.steps) || 0;
+  
+    const direction = (velocity && velocity.dx < 0) ? -1 : 1;
+  
+  x += steps * direction;
+  break;
+}
             case 'TURN': {
               const deg = Number(block.params.degrees) || 0;
               rotation = (rotation + deg) % 360;
