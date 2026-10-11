@@ -5,24 +5,25 @@ const ScratchContext = createContext();
 export const ScratchProvider = ({ children }) => {
   // Multiple Sprites State
   const [sprites, setSprites] = useState({
-    sprite1: {
+   sprite1: {
       id: 'sprite1',
       name: 'Sprite 1',
-      x: 100,
-      y: 200,
+      x: 50,
+      y: 150, 
       rotation: 0,
       blocks: [],
       speech: null, 
-      velocity: { dx: 2, dy: 0 }, // Positive velocity moves right
+      velocity: { dx: 2, dy: 0 },
     },
     sprite2: {
       id: 'sprite2',
       name: 'Sprite 2',
-      y: 200,
+      x: 350,
+      y: 150, 
       rotation: 0,
       blocks: [],
       speech: null,
-      velocity: { dx: -2, dy: 0 }, // Negative velocity moves left
+      velocity: { dx: -2, dy: 0 },
     }
   });
 
@@ -31,11 +32,11 @@ export const ScratchProvider = ({ children }) => {
   const playRef = useRef(isPlaying);
   playRef.current = isPlaying;
   
-  // Keep a ref of sprites for the animation loop to avoid closure staleness
+  
   const spritesRef = useRef(sprites);
   spritesRef.current = sprites;
 
-  // Add new sprite
+
   const addSprite = () => {
     const id = `sprite_${Date.now()}`;
     const newCount = Object.keys(sprites).length + 1;
@@ -54,7 +55,7 @@ export const ScratchProvider = ({ children }) => {
     }));
   };
 
-  // Add block to active sprite
+  
   const addBlockToActive = (blockType) => {
     const newBlock = {
       id: `block_${Date.now()}_${Math.random()}`,
