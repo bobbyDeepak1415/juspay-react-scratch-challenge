@@ -16,10 +16,10 @@ export const ScratchProvider = ({ children }) => {
       velocity: { dx: 2, dy: 0 },
     },
     sprite2: {
-      id: 'sprite2', // <-- ADD THIS LINE BACK
+      id: 'sprite2', 
       name: 'Sprite 2',
-      x: 250,        // Positioned 200px to the right of Sprite 1
-      y: 150,        // Exact same Y level as Sprite 1
+      x: 250,        
+      y: 150,       
       rotation: 0,
       blocks: [],
       speech: null,
@@ -98,7 +98,7 @@ export const ScratchProvider = ({ children }) => {
     });
   };
 
-  // Execution Engine & Collision Detection (Hero Feature)
+  
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -120,7 +120,6 @@ export const ScratchProvider = ({ children }) => {
 
     executeScripts();
 
-    // Continuous Physics & Collision Detection Loop (Hero Feature)
     const updatePhysics = () => {
       if (!playRef.current) return;
 
@@ -128,7 +127,6 @@ export const ScratchProvider = ({ children }) => {
         let updated = { ...prev };
         const keys = Object.keys(updated);
 
-        // 1. Move sprites continuously based on their velocity vector
         keys.forEach(k => {
           const s = updated[k];
           if (s.velocity && (s.velocity.dx !== 0 || s.velocity.dy !== 0)) {
@@ -140,7 +138,6 @@ export const ScratchProvider = ({ children }) => {
           }
         });
 
-        // 2. Check collisions between sprites
         for (let i = 0; i < keys.length; i++) {
           for (let j = i + 1; j < keys.length; j++) {
             const s1 = updated[keys[i]];
@@ -148,14 +145,13 @@ export const ScratchProvider = ({ children }) => {
 
             const distance = Math.hypot(s1.x - s2.x, s1.y - s2.y);
             if (distance < 50) {
-              // HERO FEATURE: Swap velocity vectors on collision
               const tempDx = s1.velocity.dx;
               const tempDy = s1.velocity.dy;
 
               updated[keys[i]] = {
                 ...s1,
                 velocity: { dx: s2.velocity.dx, dy: s2.velocity.dy },
-                x: s1.x + s2.velocity.dx // push slightly to avoid sticky collision loops
+                x: s1.x + s2.velocity.dx 
               };
               updated[keys[j]] = {
                 ...s2,
@@ -192,7 +188,6 @@ export const ScratchProvider = ({ children }) => {
           switch (block.type) {
             case 'MOVE': {
               const steps = Number(block.params.steps) || 0;
-              // Update velocity magnitude/direction based on Move steps
               const dir = velocity.dx < 0 ? -1 : 1;
               velocity = { ...velocity, dx: dir * Math.abs(steps / 5) };
               break;

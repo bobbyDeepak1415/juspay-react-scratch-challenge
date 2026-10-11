@@ -6,7 +6,7 @@ export default function Workspace() {
   const activeSprite = sprites[activeSpriteId];
 
   const handleDragOver = (e) => {
-    e.preventDefault(); // Required to allow dropping
+    e.preventDefault();
   };
 
   const handleDrop = (e) => {

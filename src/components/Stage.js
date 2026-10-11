@@ -6,7 +6,6 @@ export default function Stage() {
 
   return (
     <div className="w-96 bg-gray-100 flex flex-col border-l border-gray-200">
-      {/* Stage Arena */}
       <div className="flex-1 relative bg-white border-b border-gray-200 overflow-hidden m-4 rounded-xl shadow-inner">
         {Object.values(sprites).map((sprite) => (
           <div
@@ -19,7 +18,6 @@ export default function Stage() {
               transform: `translate(${sprite.x}px, ${sprite.y}px) rotate(${sprite.rotation}deg)`,
             }}
           >
-            {/* Speech / Thought Bubble */}
             {sprite.speech && (
               <div className="absolute -top-12 bg-black text-white px-3 py-1 rounded-lg text-xs shadow-lg whitespace-nowrap z-20">
                 {sprite.speech.text}
@@ -27,7 +25,6 @@ export default function Stage() {
               </div>
             )}
 
-            {/* Sprite Avatar (Cat/Character Icon) */}
             <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold shadow-md border-2 border-white">
               🐈
             </div>
@@ -36,7 +33,6 @@ export default function Stage() {
         ))}
       </div>
 
-      {/* Sprite Selector Toolbar */}
       <div className="p-4 bg-white border-t flex items-center justify-between">
         <div className="flex space-x-2 overflow-x-auto">
           {Object.values(sprites).map((sprite) => (
