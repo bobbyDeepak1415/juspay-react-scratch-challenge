@@ -5,21 +5,21 @@ const ScratchContext = createContext();
 export const ScratchProvider = ({ children }) => {
   // Multiple Sprites State
   const [sprites, setSprites] = useState({
-   sprite1: {
+    sprite1: {
       id: 'sprite1',
       name: 'Sprite 1',
       x: 50,
-      y: 150, 
+      y: 150,
       rotation: 0,
       blocks: [],
       speech: null, 
       velocity: { dx: 2, dy: 0 },
     },
     sprite2: {
-      id: 'sprite2',
+      id: 'sprite2', // <-- ADD THIS LINE BACK
       name: 'Sprite 2',
-      x: 350,
-      y: 150, 
+      x: 250,        // Positioned 200px to the right of Sprite 1
+      y: 150,        // Exact same Y level as Sprite 1
       rotation: 0,
       blocks: [],
       speech: null,
