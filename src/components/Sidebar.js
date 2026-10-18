@@ -1,60 +1,55 @@
-import React from 'react';
-import { useScratch } from '../context/ScratchContext';
+import React from "react";
+
+const MOTION_BLOCKS = [
+  { id: "move_10", type: "MOTION", label: "Move 10 steps", dx: 10 },
+  { id: "move_minus_10", type: "MOTION", label: "Move -10 steps", dx: -10 },
+  { id: "turn_right", type: "MOTION", label: "Turn 15 degrees", angle: 15 },
+];
+
+const CONTROL_BLOCKS = [
+  { id: "wait_1", type: "CONTROL", label: "Wait 1 seconds", seconds: 1 },
+  { id: "repeat_10", type: "CONTROL", label: "Repeat 10 times", count: 10 },
+  { id: "repeat_forever", type: "CONTROL", label: "Forever" },
+];
 
 export default function Sidebar() {
-  const { addBlockToActive } = useScratch();
-
-  const categories = [
-    {
-      name: 'Motion',
-      color: 'bg-blue-500',
-      blocks: [
-        { type: 'MOVE', label: 'Move steps' },
-        { type: 'TURN', label: 'Turn degrees' },
-        { type: 'GOTO', label: 'Go to x y' }
-      ]
-    },
-    {
-      name: 'Looks',
-      color: 'bg-purple-500',
-      blocks: [
-        { type: 'SAY', label: 'Say for seconds' },
-        { type: 'THINK', label: 'Think for seconds' }
-      ]
-    },
-    {
-      name: 'Control',
-      color: 'bg-amber-500',
-      blocks: [
-        { type: 'REPEAT', label: 'Repeat animation' }
-      ]
-    }
-  ];
-
-  const handleDragStart = (e, blockType) => {
-    e.dataTransfer.setData('text/plain', blockType);
+  const handleDragStart = (e, block) => {
+    e.dataTransfer.setData("application/json", JSON.stringify(block));
   };
 
   return (
-    <aside className="w-72 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto flex flex-col space-y-6">
-      {categories.map((cat) => (
-        <div key={cat.name} className="space-y-2">
-          <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider">{cat.name}</h3>
-          <div className="space-y-2">
-            {cat.blocks.map((block) => (
-              <div
-                key={block.type}
-                draggable
-                onDragStart={(e) => handleDragStart(e, block.type)}
-                onClick={() => addBlockToActive(block.type)}
-                className={`w-full text-left text-white px-3 py-2 rounded-md font-medium text-sm shadow-sm cursor-grab active:cursor-grabbing ${cat.color} hover:opacity-90 transition`}
-              >
-                {block.label}
-              </div>
-            ))}
-          </div>
+    <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 flex flex-col gap-6 select-none overflow-y-auto">
+      <div>
+        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Motion</h3>
+        <div className="flex flex-col gap-2">
+          {MOTION_BLOCKS.map((block) => (
+            <div
+              key={block.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, block)}
+              className="bg-blue-500 text-white px-3 py-2 rounded-md shadow-sm text-sm font-medium cursor-grab active:cursor-grabbing hover:bg-blue-600 transition"
+            >
+              {block.label}
+            </div>
+          ))}
         </div>
-      ))}
-    </aside>
+      </div>
+
+      <div>
+        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Control</h3>
+        <div className="flex flex-col gap-2">
+          {CONTROL_BLOCKS.map((block) => (
+            <div
+              key={block.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, block)}
+              className="bg-yellow-500 text-white px-3 py-2 rounded-md shadow-sm text-sm font-medium cursor-grab active:cursor-grabbing hover:bg-yellow-600 transition"
+            >
+              {block.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

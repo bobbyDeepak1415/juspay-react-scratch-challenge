@@ -1,247 +1,85 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
-const ScratchContext = createContext();
+export const ScratchContext = createContext();
 
 export const ScratchProvider = ({ children }) => {
-  // Multiple Sprites State
-  const [sprites, setSprites] = useState({
-    sprite1: {
-      id: 'sprite1',
-      name: 'Sprite 1',
-      x: 50,
-      y: 150,
-      rotation: 0,
-      blocks: [],
-      speech: null, 
-      velocity: { dx: 2, dy: 0 },
-    },
-    sprite2: {
-      id: 'sprite2', 
-      name: 'Sprite 2',
-      x: 250,        
-      y: 150,       
-      rotation: 0,
-      blocks: [],
-      speech: null,
-      velocity: { dx: -2, dy: 0 },
-    }
-  });
-
-  const [activeSpriteId, setActiveSpriteId] = useState('sprite1');
+  const [sprites, setSprites] = useState([
+    { id: "sprite-1", x: 50, y: 150, dx: 2, dy: 0, blocks: [] },
+    { id: "sprite-2", x: 300, y: 150, dx: -2, dy: 0, blocks: [] },
+  ]);
+  const [activeSpriteId, setActiveSpriteId] = useState("sprite-1");
   const [isPlaying, setIsPlaying] = useState(false);
-  const playRef = useRef(isPlaying);
-  playRef.current = isPlaying;
-  
-  
-  const spritesRef = useRef(sprites);
-  spritesRef.current = sprites;
+  const [hasCollided, setHasCollided] = useState(false);
 
-
-  const addSprite = () => {
-    const id = `sprite_${Date.now()}`;
-    const newCount = Object.keys(sprites).length + 1;
-    setSprites(prev => ({
-      ...prev,
-      [id]: {
-        id,
-        name: `Sprite ${newCount}`,
-        x: Math.random() * 200 + 50,
-        y: Math.random() * 200 + 50,
-        rotation: 0,
-        blocks: [],
-        speech: null,
-        velocity: { dx: 2, dy: 0 }
-      }
-    }));
-  };
-
-  
-  const addBlockToActive = (blockType) => {
-    const newBlock = {
-      id: `block_${Date.now()}_${Math.random()}`,
-      type: blockType,
-      params: getDefaultParams(blockType),
-      children: blockType === 'REPEAT' ? [] : undefined
-    };
-
-    setSprites(prev => ({
-      ...prev,
-      [activeSpriteId]: {
-        ...prev[activeSpriteId],
-        blocks: [...prev[activeSpriteId].blocks, newBlock]
-      }
-    }));
-  };
-
-  const getDefaultParams = (type) => {
-    switch (type) {
-      case 'MOVE': return { steps: 10 };
-      case 'TURN': return { degrees: 15 };
-      case 'GOTO': return { x: 0, y: 0 };
-      case 'SAY': return { text: 'Hello!', duration: 2 };
-      case 'THINK': return { text: 'Hmm...', duration: 2 };
-      case 'REPEAT': return { times: 3 };
-      default: return {};
-    }
-  };
-
-  const updateBlockParam = (blockId, paramKey, value) => {
-    setSprites(prev => {
-      const sprite = prev[activeSpriteId];
-      const updatedBlocks = sprite.blocks.map(b => {
-        if (b.id === blockId) {
-          return { ...b, params: { ...b.params, [paramKey]: value } };
-        }
-        return b;
-      });
-      return { ...prev, [activeSpriteId]: { ...sprite, blocks: updatedBlocks } };
-    });
-  };
-
-  
+  // Animation and collision physics loop
   useEffect(() => {
-    if (!isPlaying) return;
-
     let animationFrameId;
-    const executeScripts = async () => {
-      const spriteIds = Object.keys(spritesRef.current);
-      
-      const promises = spriteIds.map(async (sId) => {
-        const sprite = spritesRef.current[sId];
-        for (let block of sprite.blocks) {
-          if (!playRef.current) break;
-          await runBlock(sId, block);
-        }
-      });
 
-      await Promise.all(promises);
-      setIsPlaying(false);
-    };
+    if (isPlaying) {
+      const updatePhysics = () => {
+        setSprites((prevSprites) => {
+          const updated = prevSprites.map((sprite) => ({
+            ...sprite,
+            x: sprite.x + sprite.dx,
+            y: sprite.y + sprite.dy,
+          }));
 
-    executeScripts();
+          // Check collision strictly between sprite 0 and sprite 1
+          if (updated.length >= 2) {
+            const s1 = updated[0];
+            const s2 = updated[1];
 
-    const updatePhysics = () => {
-      if (!playRef.current) return;
+            const dx = s1.x - s2.x;
+            const dy = s1.y - s2.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const COLLISION_THRESHOLD = 40; // Strict bounding check
 
-      setSprites(prev => {
-        let updated = { ...prev };
-        const keys = Object.keys(updated);
-
-        keys.forEach(k => {
-          const s = updated[k];
-          if (s.velocity && (s.velocity.dx !== 0 || s.velocity.dy !== 0)) {
-            updated[k] = {
-              ...s,
-              x: s.x + s.velocity.dx,
-              y: s.y + s.velocity.dy
-            };
-          }
-        });
-
-        for (let i = 0; i < keys.length; i++) {
-          for (let j = i + 1; j < keys.length; j++) {
-            const s1 = updated[keys[i]];
-            const s2 = updated[keys[j]];
-
-            const distance = Math.hypot(s1.x - s2.x, s1.y - s2.y);
-            if (distance < 50) {
-              const tempDx = s1.velocity.dx;
-              const tempDy = s1.velocity.dy;
-
-              updated[keys[i]] = {
-                ...s1,
-                velocity: { dx: s2.velocity.dx, dy: s2.velocity.dy },
-                x: s1.x + s2.velocity.dx 
-              };
-              updated[keys[j]] = {
-                ...s2,
-                velocity: { dx: tempDx, dy: tempDy },
-                x: s2.x + tempDx
-              };
+            if (distance < COLLISION_THRESHOLD && !hasCollided) {
+              setHasCollided(true);
+              // Swap movement vectors upon collision
+              const tempDx = s1.dx;
+              const tempDy = s1.dy;
+              s1.dx = s2.dx;
+              s1.dy = s2.dy;
+              s2.dx = tempDx;
+              s2.dy = tempDy;
+            } else if (distance >= COLLISION_THRESHOLD + 10) {
+              // Reset collision lock once they separate
+              setHasCollided(false);
             }
           }
-        }
 
-        return updated;
-      });
+          return updated;
+        });
+
+        animationFrameId = requestAnimationFrame(updatePhysics);
+      };
 
       animationFrameId = requestAnimationFrame(updatePhysics);
-    };
-
-    animationFrameId = requestAnimationFrame(updatePhysics);
+    }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying]);
+  }, [isPlaying, hasCollided]);
 
-  const runBlock = async (sId, block) => {
-    return new Promise((resolve) => {
-      setTimeout(async () => {
-        if (!playRef.current) { resolve(); return; }
-
-        setSprites(prev => {
-          const sprite = prev[sId];
-          if (!sprite) return prev;
-
-          let { x, y, rotation, velocity } = sprite;
-          let speech = sprite.speech;
-
-          switch (block.type) {
-            case 'MOVE': {
-              const steps = Number(block.params.steps) || 0;
-              const dir = velocity.dx < 0 ? -1 : 1;
-              velocity = { ...velocity, dx: dir * Math.abs(steps / 5) };
-              break;
-            }
-            case 'TURN': {
-              const deg = Number(block.params.degrees) || 0;
-              rotation = (rotation + deg) % 360;
-              break;
-            }
-            case 'GOTO': {
-              x = Number(block.params.x) || 0;
-              y = Number(block.params.y) || 0;
-              break;
-            }
-            case 'SAY':
-            case 'THINK': {
-              speech = { text: block.params.text, type: block.type.toLowerCase() };
-              break;
-            }
-            default:
-              break;
-          }
-
-          return {
-            ...prev,
-            [sId]: { ...sprite, x, y, rotation, velocity, speech }
-          };
-        });
-
-        if (block.type === 'SAY' || block.type === 'THINK') {
-          const duration = (Number(block.params.duration) || 2) * 1000;
-          setTimeout(() => {
-            setSprites(prev => {
-              const sprite = prev[sId];
-              if (!sprite) return prev;
-              return { ...prev, [sId]: { ...sprite, speech: null } };
-            });
-          }, duration);
-          setTimeout(resolve, duration);
-        } else {
-          setTimeout(resolve, 300);
-        }
-      }, 300);
-    });
+  const addBlockToSprite = (spriteId, block) => {
+    setSprites((prev) =>
+      prev.map((s) => (s.id === spriteId ? { ...s, blocks: [...s.blocks, block] } : s))
+    );
   };
 
   return (
-    <ScratchContext.Provider value={{
-      sprites, activeSpriteId, setActiveSpriteId, addSprite,
-      addBlockToActive, updateBlockParam, isPlaying, setIsPlaying
-    }}>
+    <ScratchContext.Provider
+      value={{
+        sprites,
+        setSprites,
+        activeSpriteId,
+        setActiveSpriteId,
+        isPlaying,
+        setIsPlaying,
+        addBlockToSprite,
+      }}
+    >
       {children}
     </ScratchContext.Provider>
   );
 };
-
-export const useScratch = () => useContext(ScratchContext);
