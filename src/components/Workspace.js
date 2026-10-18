@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { ScratchContext } from "./ScratchContext";
 
-export default function WorkSpace() {
+function WorkSpace() {
   const { sprites, activeSpriteId, addBlockToSprite } = useContext(ScratchContext);
 
   const activeSprite = sprites.find((s) => s.id === activeSpriteId) || sprites[0];
@@ -55,3 +55,6 @@ export default function WorkSpace() {
     </div>
   );
 }
+
+
+export default WorkSpace
