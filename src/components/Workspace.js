@@ -1,107 +1,53 @@
-import React from 'react';
-import { useScratch } from '../context/ScratchContext';
+import React, { useContext } from "react";
+import { ScratchContext } from "./ScratchContext";
 
-export default function Workspace() {
-  const { sprites, activeSpriteId, addBlockToActive, updateBlockParam } = useScratch();
-  const activeSprite = sprites[activeSpriteId];
+export default function WorkSpace() {
+  const { sprites, activeSpriteId, addBlockToSprite } = useContext(ScratchContext);
+
+  const activeSprite = sprites.find((s) => s.id === activeSpriteId) || sprites[0];
 
   const handleDragOver = (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Required to allow dropping
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    const blockType = e.dataTransfer.getData('text/plain');
-    if (blockType) {
-      addBlockToActive(blockType);
+    try {
+      const blockData = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (blockData && activeSprite) {
+        addBlockToSprite(activeSprite.id, { ...blockData, uniqueId: Date.now() });
+      }
+    } catch (err) {
+      console.error("Failed to parse dropped block data", err);
     }
   };
 
-  if (!activeSprite) return <div className="flex-1 p-6">Select a sprite</div>;
-
   return (
-    <div className="flex-1 bg-white border-r border-gray-200 p-6 overflow-y-auto">
-      <div className="flex items-center justify-between mb-4 pb-2 border-b">
-        <h2 className="text-lg font-bold text-gray-800">
-          Script Workspace — <span className="text-indigo-600">{activeSprite.name}</span>
+    <div
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className="flex-1 bg-white p-6 overflow-y-auto border-r border-gray-200 min-h-[400px]"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+          Script Area ({activeSprite ? activeSprite.id : "No Sprite Selected"})
         </h2>
       </div>
 
-      <div
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        className="space-y-3 min-h-[400px] bg-gray-50 p-4 rounded-xl border-2 border-dashed border-gray-300"
-      >
-        {activeSprite.blocks.length === 0 ? (
-          <p className="text-gray-400 text-center mt-32 pointer-events-none">
-            Drag and drop blocks from the sidebar here.
-          </p>
+      <div className="flex flex-col gap-3 min-h-[300px] border-2 border-dashed border-gray-200 rounded-lg p-4 bg-gray-50/50">
+        {activeSprite?.blocks.length === 0 ? (
+          <div className="flex items-center justify-center h-48 text-gray-400 text-sm italic">
+            Drag and drop blocks here from the sidebar
+          </div>
         ) : (
-          activeSprite.blocks.map((block) => (
-            <div key={block.id} className="p-3 rounded-lg shadow-sm text-white flex items-center space-x-3 bg-blue-500">
-              <span className="font-semibold text-sm">{block.type}</span>
-
-              {block.type === 'MOVE' && (
-                <div className="flex items-center space-x-1 text-black">
-                  <input
-                    type="number"
-                    value={block.params.steps}
-                    onChange={(e) => updateBlockParam(block.id, 'steps', e.target.value)}
-                    className="w-16 px-2 py-1 rounded text-sm bg-white border"
-                  />
-                  <span className="text-white text-sm">steps</span>
-                </div>
-              )}
-
-              {block.type === 'TURN' && (
-                <div className="flex items-center space-x-1 text-black">
-                  <input
-                    type="number"
-                    value={block.params.degrees}
-                    onChange={(e) => updateBlockParam(block.id, 'degrees', e.target.value)}
-                    className="w-16 px-2 py-1 rounded text-sm bg-white border"
-                  />
-                  <span className="text-white text-sm">deg</span>
-                </div>
-              )}
-
-              {block.type === 'GOTO' && (
-                <div className="flex items-center space-x-2 text-black">
-                  <span>x:</span>
-                  <input
-                    type="number"
-                    value={block.params.x}
-                    onChange={(e) => updateBlockParam(block.id, 'x', e.target.value)}
-                    className="w-14 px-1 py-1 rounded text-sm bg-white border"
-                  />
-                  <span>y:</span>
-                  <input
-                    type="number"
-                    value={block.params.y}
-                    onChange={(e) => updateBlockParam(block.id, 'y', e.target.value)}
-                    className="w-14 px-1 py-1 rounded text-sm bg-white border"
-                  />
-                </div>
-              )}
-
-              {(block.type === 'SAY' || block.type === 'THINK') && (
-                <div className="flex items-center space-x-2 text-black">
-                  <input
-                    type="text"
-                    value={block.params.text}
-                    onChange={(e) => updateBlockParam(block.id, 'text', e.target.value)}
-                    className="w-28 px-2 py-1 rounded text-sm bg-white border"
-                  />
-                  <span className="text-white text-sm">for</span>
-                  <input
-                    type="number"
-                    value={block.params.duration}
-                    onChange={(e) => updateBlockParam(block.id, 'duration', e.target.value)}
-                    className="w-12 px-1 py-1 rounded text-sm bg-white border"
-                  />
-                  <span className="text-white text-sm">sec</span>
-                </div>
-              )}
+          activeSprite?.blocks.map((block) => (
+            <div
+              key={block.uniqueId || block.id}
+              className={`px-4 py-3 rounded-md text-white text-sm font-medium shadow-sm ${
+                block.type === "MOTION" ? "bg-blue-500" : "bg-yellow-500"
+              }`}
+            >
+              {block.label}
             </div>
           ))
         )}
